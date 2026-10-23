@@ -42,14 +42,16 @@ def main():
             stderr=subprocess.DEVNULL
         )
 
-        # Wait for Writer window to open
+        # Wait for Writer window to open (simple polling)
         window_id = None
         for _ in range(20):
             try:
+                # Finds windows that contain the name xxx"LibreOffice Writer"xxx
                 windows = execute("xdotool", "search", "--onlyvisible", "--name", "LibreOffice Writer").splitlines()
                 
                 if windows:
-                    window_id = windows[-1]
+                    # windows var will look like this: windows = ["6291458", "6291512", "6291578"]
+                    window_id = windows[-1] # We're choosing the last window, generally last window in the list indicates the "latest" one 
                     break
                 
             except subprocess.CalledProcessError:
