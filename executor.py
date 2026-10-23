@@ -95,4 +95,4 @@ def main():
         log_path.write_text(json.dumps(events, indent=2))
         print(f"Artifacts saved to: {RUN_DIR}")
         
-        
+main()
