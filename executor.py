@@ -5,73 +5,22 @@ from datetime import datetime, timezone
 from pathlib import Path
 import uuid
 
-PROJECT_DIR = Path.home() / "cua-learning"
-RUN_ID = (
-    datetime.now().strftime("%Y%m%d-%H%M%S") + "-" + uuid.uuid4().hex[:6]
-)
-RUN_DIR = PROJECT_DIR / "runs" / RUN_ID
-RUN_DIR.mkdir(parents=True, exist_ok=True)
-
-OUTPUT = RUN_DIR / "document.odt"
-MESSAGE = "Hello from my Python computer-use executor!"
-
 """
 events is js hanging out, i want to give it structure, esp for line 144
 """
 
-class EventManager:
-    def __init__(self):
-        self.events = []
-    
-    def record_event(self, action, detail=""):
-        self.events.append(
-            {
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-                "action": action,
-                "detail": detail
-            }
-        )
-    
-    def get_events(self):
-        return self.events.copy()
-
-# events = []
-events = EventManager()
-
-# Previously used this prior to evaluator.py
-# result = {
-#     "run_directory": RUN_DIR,
-#     "run_id": RUN_ID,
-#     "success": False
-# }
-
-def record(action, detail=""):
-    events.record_event(action, detail)
-    # events.append(
-    #     {
-    #         "timestamp": datetime.now(timezone.utc).isoformat(),
-    #         "action": action,
-    #         "detail": detail
-    #     }
+def executor(message: str, run_dir, run_id):
+    # PROJECT_DIR = Path.home() / "cua-learning"
+    # RUN_ID = (
+    #     datetime.now().strftime("%Y%m%d-%H%M%S") + "-" + uuid.uuid4().hex[:6]
     # )
-
-def execute(*args):
-    result = subprocess.run(
-        args,
-        capture_output=True,
-        text=True,
-        timeout=30,
-        check=True,
-    )
-    record("command", " ".join(args))
-    return result.stdout.strip()
-
-def screenshot(name):
-    path = RUN_DIR / name
-    execute("scrot", str(path))
-    record("screenshot", name)
-
-def executor():
+    # RUN_DIR = PROJECT_DIR / "runs" / RUN_ID
+    # RUN_DIR.mkdir(parents=True, exist_ok=True)
+    RUN_ID = run_id
+    RUN_DIR = run_dir
+    OUTPUT = RUN_DIR / "document.odt"
+    MESSAGE = message
+    # MESSAGE = "Hello from my Python computer-use executor!"    
     try:
         record("start", RUN_ID)
         
@@ -170,3 +119,56 @@ def executor():
         log_path = RUN_DIR / "events.json"
         log_path.write_text(json.dumps(events.get_events(), indent=2))
         print(f"Artifacts saved to: {RUN_DIR}")
+
+
+class EventManager:
+    def __init__(self):
+        self.events = []
+    
+    def record_event(self, action, detail=""):
+        self.events.append(
+            {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "action": action,
+                "detail": detail
+            }
+        )
+    
+    def get_events(self):
+        return self.events.copy()
+
+# events = []
+events = EventManager()
+
+# Previously used this prior to evaluator.py
+# result = {
+#     "run_directory": RUN_DIR,
+#     "run_id": RUN_ID,
+#     "success": False
+# }
+
+def record(action, detail=""):
+    events.record_event(action, detail)
+    # events.append(
+    #     {
+    #         "timestamp": datetime.now(timezone.utc).isoformat(),
+    #         "action": action,
+    #         "detail": detail
+    #     }
+    # )
+
+def execute(*args):
+    result = subprocess.run(
+        args,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=True,
+    )
+    record("command", " ".join(args))
+    return result.stdout.strip()
+
+def screenshot(name):
+    path = RUN_DIR / name
+    execute("scrot", str(path))
+    record("screenshot", name)

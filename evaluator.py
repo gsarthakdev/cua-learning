@@ -4,7 +4,7 @@ import zipfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-EXPECTED = "Hello from my Python computer-use executor!"
+# EXPECTED = "Hello from my Python computer-use executor!"
 
 NS = {
     "office": "urn:oasis:names:tc:opendocument:xmlns:office:1.0",
@@ -15,7 +15,8 @@ NS = {
 
 # Since we will run evaluator.py from run_task.py, we can simply pass in the PATH of the .odt file from run_task.py
 
-def evaluate(task_name, document_path: str):
+def evaluate(task_name, document_path: str, expected):
+    EXPECTED = expected
     DOCUMENT = document_path
     result = {
         "task_name": task_name,
