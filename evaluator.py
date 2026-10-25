@@ -15,8 +15,8 @@ NS = {
 
 # Since we will run evaluator.py from run_task.py, we can simply pass in the PATH of the .odt file from run_task.py
 
-def evaluate(task_name, path: str):
-    DOCUMENT = path
+def evaluate(task_name, document_path: str):
+    DOCUMENT = document_path
     result = {
         "task_name": task_name,
         "file_exists": DOCUMENT.is_file(),
