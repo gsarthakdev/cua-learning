@@ -1,14 +1,59 @@
 import json
 import subprocess
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
+import uuid
 
-RUN_ID = datetime.now().strftime("%Y%m%d-%H%M%S")
-RUN_DIR = Path.home() / "cua-learning" / "runs" / RUN_ID
+PROJECT_DIR = Path.home() / "cua-learning"
+RUN_ID = (
+    datetime.now().strftime("%Y%m%d-%H%M%S") + "-" + uuid.uuid4().hex[:6]
+)
+RUN_DIR = PROJECT_DIR / "runs" / RUN_ID
 RUN_DIR.mkdir(parents=True, exist_ok=True)
 
-events = []
+OUTPUT = RUN_DIR / "document.odt"
+MESSAGE = "Hello from my Python computer-use executor!"
+
+"""
+events is js hanging out, i want to give it structure, esp for line 144
+"""
+
+class EventManager:
+    def __init__(self):
+        self.events = []
+    
+    def record_event(self, action, detail=""):
+        self.events.append(
+            {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "action": action,
+                "detail": detail
+            }
+        )
+    
+    def get_events(self):
+        return self.events.copy()
+
+# events = []
+events = EventManager()
+
+# Previously used this prior to evaluator.py
+# result = {
+#     "run_directory": RUN_DIR,
+#     "run_id": RUN_ID,
+#     "success": False
+# }
+
+def record(action, detail=""):
+    events.record_event(action, detail)
+    # events.append(
+    #     {
+    #         "timestamp": datetime.now(timezone.utc).isoformat(),
+    #         "action": action,
+    #         "detail": detail
+    #     }
+    # )
 
 def execute(*args):
     result = subprocess.run(
@@ -18,23 +63,18 @@ def execute(*args):
         timeout=30,
         check=True,
     )
+    record("command", " ".join(args))
     return result.stdout.strip()
-
-def record(action, detail):
-    events.append(
-        {
-            "action": action,
-            "detail": detail
-        }
-    )
 
 def screenshot(name):
     path = RUN_DIR / name
     execute("scrot", str(path))
-    record("screenshot", str(path))
+    record("screenshot", name)
 
-def main():
+def executor():
     try:
+        record("start", RUN_ID)
+        
         # Open LibreOffice Writer
         subprocess.Popen(
             ["libreoffice", "--writer"],
@@ -44,6 +84,7 @@ def main():
 
         # Wait for Writer window to open (simple polling)
         window_id = None
+        
         for _ in range(20):
             try:
                 # Finds windows that contain the name xxx"LibreOffice Writer"xxx
@@ -60,33 +101,66 @@ def main():
             time.sleep(1)
 
         if window_id is None:
-            raise RuntimeError("LibreOffice window not found")
+            raise RuntimeError("LibreOffice Writer window not found")
         
         # Activate Writer and start a new document
         execute("xdotool", "windowactivate", "--sync", window_id)
         time.sleep(1)
+        
+        # Create a new document
         execute("xdotool", "key", "--clearmodifiers", "ctrl+n")
         time.sleep(2)
         
         screenshot("before.png")
 
         # Type into the document
-        
-        message = "Hello from my Python computer-use executor!"
-        
         execute(
             "xdotool", "type",
-            "--clearmodifiers", "--delay", "50",
-            message
+            "--clearmodifiers", "--delay", "40",
+            MESSAGE
         )
         
-        record("keyboard", message)
-
+        record("keyboard_type_text", MESSAGE)
         time.sleep(1)
-        screenshot("after.png")
-        record("result", "Actions completed; document not yet evaluated")
-        print("Execution completed.")
         
+        screenshot("after_typing.png")
+        record("result", "Actions completed; document not yet evaluated")
+        
+        # Save As operation through the GUI.
+        execute(
+            "xdotool", "key",
+            "--clearmodifiers", "ctrl+shift+s"
+        )
+        time.sleep(2)
+        
+        execute(
+            "xdotool", "key", "--clearmodifiers", "ctrl+l"
+        )
+        
+        time.sleep(1)
+        
+        # type out the path
+        execute(
+            "xdotool", "type", "--clearmodifiers", "--delay", "20", str(OUTPUT)
+        )
+
+        # press the enter key
+        execute("xdotool", "key", "Return")
+        
+        # Wait for the output artifact to save
+        # poll for 10 seconds, 20 times.
+        for _ in range(20):
+            if OUTPUT.is_file() and OUTPUT.stat().st_size > 0:
+                break
+            time.sleep(0.5)
+        else:
+            raise RuntimeError("Output document not created or not saved")
+        
+        time.sleep(1)
+        screenshot("after_save.png")
+        
+        # record("task_end", )
+        print("Execution completed.")
         
     except Exception as error:
         record("error", str(error))
@@ -94,7 +168,5 @@ def main():
     
     finally:
         log_path = RUN_DIR / "events.json"
-        log_path.write_text(json.dumps(events, indent=2))
+        log_path.write_text(json.dumps(events.get_events(), indent=2))
         print(f"Artifacts saved to: {RUN_DIR}")
-        
-main()
