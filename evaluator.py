@@ -15,17 +15,27 @@ NS = {
 
 # Since we will run evaluator.py from run_task.py, we can simply pass in the PATH of the .odt file from run_task.py
 
-def evaluate(task_name, document_path: str, expected):
+def evaluate(task_name, document_path: Path, expected):
+    """
+    Args:
+        task_name (str): Client defined name of the task.
+        document_path (pathlib.PosixPath): The document's path, as a Path object.
+        expected (str): The expected text/string to be found in the document.
+    
+    Returns:
+        result (dict): Dictionary containing task_name, file_exists, content_matches, and success.
+    """
+    
     EXPECTED = expected
     DOCUMENT = document_path
-    result = {
-        "task_name": task_name,
-        "file_exists": DOCUMENT.is_file(),
-        "content_matches": False,
-        "success": False # if content_matches==True, success=True
-    }
 
     try:
+        result = {
+            "task_name": task_name,
+            "file_exists": DOCUMENT.is_file(),
+            "content_matches": False,
+            "success": False # if content_matches==True, success=True
+        }
         if not DOCUMENT.is_file():
             raise FileNotFoundError(f"Missing {DOCUMENT}")
         
