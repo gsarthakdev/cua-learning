@@ -16,7 +16,7 @@ RUN_ID = (
 )
 RUN_DIR = PROJECT_DIR / "runs" / RUN_ID
 RUN_DIR.mkdir(parents=True, exist_ok=True)
-DOCUMENT_PATH = PROJECT_DIR / "outputs/first-task.odt"
+DOCUMENT_PATH = RUN_DIR / "document.odt"
 
 try:
     MESSAGE = "Hello from my Python computer-use executor!"    

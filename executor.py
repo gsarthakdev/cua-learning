@@ -16,6 +16,12 @@ def executor(message: str, run_dir, run_id):
     # )
     # RUN_DIR = PROJECT_DIR / "runs" / RUN_ID
     # RUN_DIR.mkdir(parents=True, exist_ok=True)
+
+    def screenshot(name):
+        path = RUN_DIR / name
+        execute("scrot", str(path))
+        record("screenshot", name)
+        
     RUN_ID = run_id
     RUN_DIR = run_dir
     OUTPUT = RUN_DIR / "document.odt"
@@ -167,8 +173,3 @@ def execute(*args):
     )
     record("command", " ".join(args))
     return result.stdout.strip()
-
-def screenshot(name):
-    path = RUN_DIR / name
-    execute("scrot", str(path))
-    record("screenshot", name)
