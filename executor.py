@@ -132,7 +132,7 @@ def execute_task(message: str, run_dir, run_id):
         run_overview["error"] = True
         run_overview["error_message"] = str(error)
         print(f"Execution failed: {error}")
-        raise ExecutorError(str(error), RUN_DIR)
+        raise ExecutorError(str(error), RUN_DIR) from error
         
     finally:
         log_path = RUN_DIR / "events.json"
