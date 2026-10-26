@@ -5,11 +5,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 import uuid
 
+from exceptions import ExecutorError
+
 """
 events is js hanging out, i want to give it structure, esp for line 144
 """
 
-def executor(message: str, run_dir, run_id):
+def execute_task(message: str, run_dir, run_id):
     # PROJECT_DIR = Path.home() / "cua-learning"
     # RUN_ID = (
     #     datetime.now().strftime("%Y%m%d-%H%M%S") + "-" + uuid.uuid4().hex[:6]
@@ -26,10 +28,14 @@ def executor(message: str, run_dir, run_id):
     RUN_DIR = run_dir
     OUTPUT = RUN_DIR / "document.odt"
     MESSAGE = message
-    # MESSAGE = "Hello from my Python computer-use executor!"    
+    run_overview = {
+        "error": False,
+        "error_message": None
+    }
+    # MESSAGE = "Hello from my Python computer-use executor!"
+    # passed_with_no_exception = False   
     try:
         record("start", RUN_ID)
-        
         # Open LibreOffice Writer
         subprocess.Popen(
             ["libreoffice", "--writer"],
@@ -116,15 +122,25 @@ def executor(message: str, run_dir, run_id):
         
         # record("task_end", )
         print("Execution completed.")
+        # passed_with_no_exception = True
+        # run_overview[""]
         
     except Exception as error:
+        # If I insert a raise ValueError() here, would the finally block get hit?
+        # Do some basic python file running with this setup with raise ValueError inside an except
         record("error", str(error))
+        run_overview["error"] = True
+        run_overview["error_message"] = str(error)
         print(f"Execution failed: {error}")
-    
+        raise ExecutorError(str(error), RUN_DIR)
+        
     finally:
         log_path = RUN_DIR / "events.json"
         log_path.write_text(json.dumps(events.get_events(), indent=2))
         print(f"Artifacts saved to: {RUN_DIR}")
+        
+    return run_overview
+    # return passed_with_no_exception
 
 
 class EventManager:
