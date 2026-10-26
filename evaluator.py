@@ -22,7 +22,7 @@ def evaluate(task_name, document_path: str, expected):
         "task_name": task_name,
         "file_exists": DOCUMENT.is_file(),
         "content_matches": False,
-        "success": False
+        "success": False # if content_matches==True, success=True
     }
 
     try:
