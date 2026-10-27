@@ -62,7 +62,7 @@ def evaluate(task_name, document_path: Path, expected):
         
     except Exception as error:
         result["error"] = str(error)
-        raise EvaluationError(str(error), document_path) from error
+        raise EvaluationError(str(error), document_path, result) from error
     
     return result
 

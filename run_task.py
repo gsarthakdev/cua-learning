@@ -12,7 +12,7 @@ from datetime import datetime
 from uuid import uuid4
 from exceptions import ExecutorError, EvaluationError
 import json
-from typing import TypedDict, Literal
+from typing import TypedDict, Literal, NotRequired
 
 
 
@@ -48,12 +48,14 @@ My write-up based on its suggestions and my techincal judgement:
 
 class ResultDict(TypedDict):
     run_id: str
-    executor_ran: bool
+    task_name: str
+    executor_completed: bool
+    evaluation_completed: bool
     evaluation_success: bool
     end_to_end_success: bool
-    error_type: str
-    error_message: str
-    status: Literal["not_started", "started_execution", "started_evaluation", "executor_failed", "evaluation_failed", "harness_failed", "completed"]
+    error_type: NotRequired[str]
+    error_message: NotRequired[str]
+    status: Literal["not_started", "started_execution", "execution_completed", "started_evaluation","evaluation_completed", "executor_failed", "evaluation_failed", "harness_failed", "completed"]
     
     
 """
@@ -70,6 +72,7 @@ result = {
 
 def main():
     try:
+        # need to modularize this file path loading stuff into a function task_setup()
         PROJECT_DIR = Path.home() / "cua-learning"
         RUN_ID = (
             datetime.now().strftime("%Y%m%d-%H%M%S") + "-" + uuid4().hex[:6]
@@ -77,11 +80,13 @@ def main():
         RUN_DIR = PROJECT_DIR / "runs" / RUN_ID
         RUN_DIR.mkdir(parents=True, exist_ok=True)
         DOCUMENT_PATH = RUN_DIR / "document.odt"
-        
+        TASK_NAME = "UsingDoc"
 
         result: ResultDict = {
             "run_id": RUN_ID,
-            "executor_ran": False,
+            "task_name": TASK_NAME,
+            "executor_completed": False,
+            "evaluation_completed": False,
             "evaluation_success": False,
             "end_to_end_success": False,
             "status": "not_started"
@@ -89,10 +94,16 @@ def main():
         
         # ---------    
         MESSAGE = "Hello from my Python computer-use executor!"
+        
         result["status"] = "started_execution"    
         execute_task(MESSAGE, RUN_DIR, RUN_ID)
+        result["status"] = "execution_completed"
+        
+        result["executor_completed"] = True
+        
         result["status"] = "started_evalution"    
-        evaluation_result = evaluate("UsingDoc", DOCUMENT_PATH, MESSAGE)
+        evaluation_result = evaluate(TASK_NAME, DOCUMENT_PATH, MESSAGE)
+        result["status"] = "evaluation_completed"
         """
                 result = {
                 "task_name": task_name,
@@ -101,10 +112,10 @@ def main():
                 "success": False # if content_matches==True, success=True
             }
         """
+
         # If we are still in this block here, then the execution worked
-        result["executor_ran"] = True
         result["evaluation_success"] = evaluation_result["success"]
-        result["end_to_end_success"] = result["executor_ran"] and result["evaluation_success"]
+        result["end_to_end_success"] = result["executor_completed"] and result["evaluation_success"]
         # print(evaluation_result)    
         result["status"] = "completed"
         
