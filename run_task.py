@@ -104,6 +104,7 @@ def main():
         result["status"] = "started_evalution"    
         evaluation_result = evaluate(TASK_NAME, DOCUMENT_PATH, MESSAGE)
         result["status"] = "evaluation_completed"
+        result["evaluation_completed"] = True
         """
                 result = {
                 "task_name": task_name,
