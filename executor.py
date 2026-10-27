@@ -28,10 +28,10 @@ def execute_task(message: str, run_dir, run_id):
     RUN_DIR = run_dir
     OUTPUT = RUN_DIR / "document.odt"
     MESSAGE = message
-    run_overview = {
-        "error": False,
-        "error_message": None
-    }
+    # run_overview = {
+    #     "error": False,
+    #     "error_message": None
+    # }
     # MESSAGE = "Hello from my Python computer-use executor!"
     # passed_with_no_exception = False   
     try:
@@ -129,17 +129,18 @@ def execute_task(message: str, run_dir, run_id):
         # If I insert a raise ValueError() here, would the finally block get hit?
         # Do some basic python file running with this setup with raise ValueError inside an except
         record("error", str(error))
-        run_overview["error"] = True
-        run_overview["error_message"] = str(error)
+        # run_overview["error"] = True
+        # run_overview["error_message"] = str(error)
         print(f"Execution failed: {error}")
         raise ExecutorError(str(error), RUN_DIR) from error
         
     finally:
+        # Write executor events to events.json file.
         log_path = RUN_DIR / "events.json"
         log_path.write_text(json.dumps(events.get_events(), indent=2))
-        print(f"Artifacts saved to: {RUN_DIR}")
+        # print(f"Artifacts saved to: {RUN_DIR}")
         
-    return run_overview
+    # return run_overview
     # return passed_with_no_exception
 
 
