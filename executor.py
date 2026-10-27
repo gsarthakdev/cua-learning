@@ -181,6 +181,7 @@ def record(action, detail=""):
     # )
 
 def execute(*args):
+    record("command", " ".join(args))
     result = subprocess.run(
         args,
         capture_output=True,
@@ -188,5 +189,4 @@ def execute(*args):
         timeout=30,
         check=True,
     )
-    record("command", " ".join(args))
     return result.stdout.strip()
