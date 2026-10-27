@@ -21,6 +21,33 @@ DOCUMENT_PATH = RUN_DIR / "document.odt"
 
 # My goal is, if an Exception is hit in executor.py, we shall trigger the except in the block below
 
+"""
+10/26:
+Intentionally test adding 2 bugs and seeing how CU (Computer Use) behaves.
+
+1. (executor): Write incorrect message in document.odt. Evaluation should return content_matches: false
+
+2. Inside executor, introduce any kind of bug, that should trigger a ExecutorError
+-----
+
+ChatGPT (GPT-6 High) suggests an amazing paradigm for the `result` var.
+My write-up based on its suggestions and my techincal judgement:
+    - Keep result dict in run_task.py with run_id, task_name, success, status.
+        - status alone can indicate different success(s)/failure modes:
+            - executor successful but eval failed: evaluation_failed
+            - executor + eval successful: passed
+            - executor failed: executor_failed
+            - evaluation code broke: evaluation_error
+            - something else: harness_failure
+    - If exception: add relevant error keys: error_type, error_message
+    
+    - If evaluation runs, then we simply result.update({evaluation_result}) to the `result` dict. Centralize location for result to aid in deduplication of data in multiple places. 
+    
+    Then write that result dict into results.json for RUN_DIR / RUN_ID / results.json
+    
+    Need to return 0 if run successful else 1
+"""
+
 try:
     MESSAGE = "Hello from my Python computer-use executor!"    
     # run_overview = execute_task(MESSAGE, RUN_DIR, RUN_ID)
