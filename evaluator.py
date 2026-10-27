@@ -3,7 +3,7 @@ import sys
 import zipfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
-
+from exceptions import EvaluationError
 # EXPECTED = "Hello from my Python computer-use executor!"
 
 NS = {
@@ -62,8 +62,10 @@ def evaluate(task_name, document_path: Path, expected):
         
     except Exception as error:
         result["error"] = str(error)
+        raise EvaluationError(str(error), document_path) from error
     
     return result
 
     # print(json.dumps(result, indent=2))
     # sys.exit(0 if result["success"] else 1)
+    
