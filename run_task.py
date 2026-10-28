@@ -120,12 +120,14 @@ def main():
         )
         print(json.dumps(result, indent=2))
 
-        # Write the evaluation_result dict to evaluation_log.json
-        evaluation_log_path = RUN_DIR / "evaluation_log.json"
-        evaluation_log_path.write_text(
-            json.dumps(evaluation_result, indent=2)
-        )
-        print(f"\n{json.dumps(evaluation_result, indent=2)}")
+        # If the executor failed, then it's Exception is triggered, but we still reach the finally block and should not attempt to safe `evaluation_result` since it wouldn't have ran.
+        if not result["status"] == "executor_failed":
+            # Write the evaluation_result dict to evaluation_log.json
+            evaluation_log_path = RUN_DIR / "evaluation_log.json"
+            evaluation_log_path.write_text(
+                json.dumps(evaluation_result, indent=2)
+            )
+            print(f"\n{json.dumps(evaluation_result, indent=2)}")
         
         print(f"Artifacts saved to: {RUN_DIR}")
 
