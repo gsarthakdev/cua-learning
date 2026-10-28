@@ -30,6 +30,18 @@ def execute_in_vm(*command):
     )
     
 
+GUEST_USERNAME = "sarthak"
+def execute_as_user(*command):
+    """Execute a command in Ubuntu as the unprivileged user."""
+    return execute_in_vm(
+        "/usr/sbin/runuser",
+        "-u",
+        GUEST_USERNAME,
+        "--",
+        *command,
+    )
+    
+
 def main():
     # Verify the VM is running
     status = run_utm("status", VM_ID)
@@ -46,6 +58,9 @@ def main():
     username = execute_in_vm("/usr/bin/id", "-un")
     print(f"Guest execution user: {username}")
 
+    guest_user = execute_as_user("/usr/bin/id", "-un")
+    print(f"Unprivileged execution user: {guest_user}")
+    
     return 0
 
 
