@@ -119,6 +119,14 @@ def main():
             json.dumps(result, indent=2)
         )
         print(json.dumps(result, indent=2))
+
+        # Write the evaluation_result dict to evaluation_log.json
+        evaluation_log_path = RUN_DIR / "evaluation_log.json"
+        evaluation_log_path.write_text(
+            json.dumps(evaluation_result, indent=2)
+        )
+        print(f"\n{json.dumps(evaluation_result, indent=2)}")
+        
         print(f"Artifacts saved to: {RUN_DIR}")
 
     return 0 if result["end_to_end_success"] else 1
