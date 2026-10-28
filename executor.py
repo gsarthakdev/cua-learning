@@ -10,10 +10,6 @@ from exceptions import ExecutorError
 """
 events is js hanging out, i want to give it structure, esp for line 144
 """
-def screenshot(name):
-    path = RUN_DIR / name
-    execute("scrot", str(path))
-    record("screenshot", name)
     
 def execute_task(message: str, run_dir, run_id):
     # PROJECT_DIR = Path.home() / "cua-learning"
@@ -23,10 +19,10 @@ def execute_task(message: str, run_dir, run_id):
     # RUN_DIR = PROJECT_DIR / "runs" / RUN_ID
     # RUN_DIR.mkdir(parents=True, exist_ok=True)
 
-    # def screenshot(name):
-    #     path = RUN_DIR / name
-    #     execute("scrot", str(path))
-    #     record("screenshot", name)
+    def screenshot(name):
+        path = RUN_DIR / name
+        execute("scrot", str(path))
+        record("screenshot", name)
         
     RUN_ID = run_id
     RUN_DIR = run_dir
