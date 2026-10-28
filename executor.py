@@ -27,7 +27,8 @@ def execute_task(message: str, run_dir, run_id):
     RUN_ID = run_id
     RUN_DIR = run_dir
     OUTPUT = RUN_DIR / "document.odt"
-    MESSAGE = message
+    # MESSAGE = message
+    MESSAGE = "Not the right message for typing." # introducing intentional bug
     # run_overview = {
     #     "error": False,
     #     "error_message": None

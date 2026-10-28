@@ -20,30 +20,13 @@ from typing import TypedDict, Literal, NotRequired
 
 
 """
-10/26:
+10/27:
 Intentionally test adding 2 bugs and seeing how CU (Computer Use) behaves.
 
 1. (executor): Write incorrect message in document.odt. Evaluation should return content_matches: false
 
 2. Inside executor, introduce any kind of bug, that should trigger a ExecutorError
 -----
-
-ChatGPT (GPT-6 High) suggests an amazing paradigm for the `result` var.
-My write-up based on its suggestions and my techincal judgement:
-    - Keep result dict in run_task.py with run_id, task_name, success, status.
-        - status alone can indicate different success(s)/failure modes:
-            - executor successful but eval didn't pass: evaluation_failed
-            - executor + eval successful: passed
-            - executor failed: executor_failed
-            - evaluation code broke: evaluation_error
-            - something else: harness_failure
-    - If exception: add relevant error keys: error_type, error_message
-    
-    - If evaluation runs, then we simply result.update({evaluation_result}) to the `result` dict. Centralize location for result to aid in deduplication of data in multiple places. 
-    
-    Then write that result dict into results.json for RUN_DIR / RUN_ID / results.json
-    
-    Need to return 0 if run successful else 1
 """
 
 class ResultDict(TypedDict):
@@ -57,18 +40,7 @@ class ResultDict(TypedDict):
     error_message: NotRequired[str]
     status: Literal["not_started", "started_execution", "execution_completed", "started_evaluation","evaluation_completed", "executor_failed", "evaluation_failed", "harness_failed", "completed"]
     
-    
-"""
-result = {
-    run_id:,
-    executor_success: ,
-    evaluation_success,
-    error_type:
-    error_message:
-    status:
-    end_to_end_success
-}
-"""
+
 
 def main():
     try:
@@ -117,20 +89,9 @@ def main():
         # If we are still in this block here, then the execution worked
         result["evaluation_success"] = evaluation_result["success"]
         result["end_to_end_success"] = result["executor_completed"] and result["evaluation_success"]
-        # print(evaluation_result)    
         result["status"] = "completed"
         
-        """
-        2 cases of executor() failing:
-            1. Exception occurs ("Execution failed: ...")
-                - We don't want to trigger the evaluator
-                - Simply return result with task_failed
-                - print a global "result" with task_failed
-                - events.json stores the error
-            2. No exception but task didn't completed as planned
-                - In this case we can run the evalautor
         
-        """
     except ExecutorError as error:
         # We know the executor for some reason failed
         result["status"] = "executor_failed"
@@ -161,6 +122,7 @@ def main():
         print(f"Artifacts saved to: {RUN_DIR}")
 
     return 0 if result["end_to_end_success"] else 1
+
 
 if __name__ == "__main__":
     raise SystemExit(main())
