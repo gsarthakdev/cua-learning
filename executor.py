@@ -10,7 +10,11 @@ from exceptions import ExecutorError
 """
 events is js hanging out, i want to give it structure, esp for line 144
 """
-
+def screenshot(name):
+    path = RUN_DIR / name
+    execute("scrot", str(path))
+    record("screenshot", name)
+    
 def execute_task(message: str, run_dir, run_id):
     # PROJECT_DIR = Path.home() / "cua-learning"
     # RUN_ID = (
@@ -19,10 +23,10 @@ def execute_task(message: str, run_dir, run_id):
     # RUN_DIR = PROJECT_DIR / "runs" / RUN_ID
     # RUN_DIR.mkdir(parents=True, exist_ok=True)
 
-    def screenshot(name):
-        path = RUN_DIR / name
-        execute("scrot", str(path))
-        record("screenshot", name)
+    # def screenshot(name):
+    #     path = RUN_DIR / name
+    #     execute("scrot", str(path))
+    #     record("screenshot", name)
         
     RUN_ID = run_id
     RUN_DIR = run_dir
@@ -126,8 +130,6 @@ def execute_task(message: str, run_dir, run_id):
         # run_overview[""]
         
     except Exception as error:
-        # If I insert a raise ValueError() here, would the finally block get hit?
-        # Do some basic python file running with this setup with raise ValueError inside an except
         record("error", str(error))
         # run_overview["error"] = True
         # run_overview["error_message"] = str(error)
