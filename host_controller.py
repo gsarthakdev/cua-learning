@@ -40,7 +40,22 @@ def execute_as_user(*command):
         "--",
         *command,
     )
-    
+
+
+def execute_in_gui_session(*command):
+    """Execute a command in the Ubuntu user's X11 session."""
+    return execute_in_vm(
+        "/usr/sbin/runuser",
+        "-u",
+        "sarthak",
+        "--",
+        "/usr/bin/env",
+        "DISPLAY=:0",
+        "XAUTHORITY=/run/user/1000/gdm/Xauthority",
+        "XDG_RUNTIME_DIR=/run/user/1000",
+        *command,
+    )
+
 
 def main():
     # Verify the VM is running
@@ -60,6 +75,16 @@ def main():
 
     guest_user = execute_as_user("/usr/bin/id", "-un")
     print(f"Unprivileged execution user: {guest_user}")
+    
+    for i in range(1,5+1):
+        print(f"\n=====Attempt {i}")
+        resolution = execute_in_gui_session(
+            "/usr/bin/xdotool",
+            "getdisplaygeometry",
+        )
+        
+        print(f"Remote GUI resolution: {resolution}")
+        
     
     return 0
 
