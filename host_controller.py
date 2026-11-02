@@ -1,3 +1,4 @@
+import shlex
 import subprocess
 from pathlib import Path
 
@@ -6,8 +7,21 @@ UTMCTL = Path("/Applications/UTM.app/Contents/MacOS/utmctl")
 # Got this ID by running `/Applications/UTM.app/Contents/MacOS/utmctl list`
 VM_ID = "DF61C72B-5135-4708-A5C4-C8C512F0B568"
 
+SSH_KEY = Path.home() / ".ssh/cua_learning_ed25519"
+SSH_TARGET = "sarthak@192.168.64.4"
+
+GUEST_RUNNER = "/home/sarthak/cua-learning/run_task.py"
+
+GUI_ENV = [
+    "env",
+    "DISPLAY=:0",
+    "XAUTHORITY=/run/user/1000/gdm/Xauthority",
+    "XDG_RUNTIME_DIR=/run/user/1000",
+    "DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus",
+]
+
 def run_utm(*args):
-    """Execute a UTM CLI command from the macOS host."""
+    """Execute a UTM lifecycle command on host machine."""
     
     result = subprocess.run(
         [str(UTMCTL), *args],
@@ -19,42 +33,55 @@ def run_utm(*args):
     
     return result.stdout.strip()
 
-def execute_in_vm(*command):
-    """Run a command inside the Ubuntu guest via QEMU Guest Agent."""
+def execute_in_vm(*command, gui=False, timeout=30):
+    """Execute a command in Ubuntu via SSH.
     
-    return run_utm(
-        "exec",
-        VM_ID,
-        "--cmd",
+    Returns CompletedProcess so callers can inspect stdout, stderr, and the guest command's exit code.
+    """
+    remote_command = [
+        *(GUI_ENV if gui else []),
         *command
+    ]
+    return subprocess.run(
+        [
+            "ssh",
+            "-i", str(SSH_KEY),
+            "-o", "IdentitiesOnly=yes",
+            "-o", "BatchMode=yes",
+            "-o", "ConnectTimeout=5",
+            SSH_TARGET,
+            shlex.join(remote_command),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=timeout
     )
     
 
-GUEST_USERNAME = "sarthak"
-def execute_as_user(*command):
-    """Execute a command in Ubuntu as the unprivileged user."""
-    return execute_in_vm(
-        "/usr/sbin/runuser",
-        "-u",
-        GUEST_USERNAME,
-        "--",
-        *command,
-    )
+# GUEST_USERNAME = "sarthak"
+# def execute_as_user(*command):
+#     """Execute a command in Ubuntu as the unprivileged user."""
+#     return execute_in_vm(
+#         "/usr/sbin/runuser",
+#         "-u",
+#         GUEST_USERNAME,
+#         "--",
+#         *command,
+#     )
 
-
-def execute_in_gui_session(*command):
-    """Execute a command in the Ubuntu user's X11 session."""
-    return execute_in_vm(
-        "/usr/sbin/runuser",
-        "-u",
-        "sarthak",
-        "--",
-        "/usr/bin/env",
-        "DISPLAY=:0",
-        "XAUTHORITY=/run/user/1000/gdm/Xauthority",
-        "XDG_RUNTIME_DIR=/run/user/1000",
-        *command,
-    )
+# def execute_in_gui_session(*command):
+#     """Execute a command in the Ubuntu user's X11 session."""
+#     return execute_in_vm(
+#         "/usr/sbin/runuser",
+#         "-u",
+#         "sarthak",
+#         "--",
+#         "/usr/bin/env",
+#         "DISPLAY=:0",
+#         "XAUTHORITY=/run/user/1000/gdm/Xauthority",
+#         "XDG_RUNTIME_DIR=/run/user/1000",
+#         *command,
+#     )
 
 
 def main():
@@ -70,21 +97,27 @@ def main():
     print(f"Guest OS: {os_name}")
 
     # Identify which use executes guest-agent cmds
-    username = execute_in_vm("/usr/bin/id", "-un")
-    print(f"Guest execution user: {username}")
-
-    guest_user = execute_as_user("/usr/bin/id", "-un")
-    print(f"Unprivileged execution user: {guest_user}")
+    identity = execute_in_vm("/usr/bin/id", "-un")
+    if identity.returncode != 0:
+        raise RuntimeError(f"SSH identity check failed: {identity.stderr}")
     
-    for i in range(1,5+1):
-        print(f"\n=====Attempt {i}")
-        resolution = execute_in_gui_session(
-            "/usr/bin/xdotool",
-            "getdisplaygeometry",
+    print(f"SSH user executing cmds: {identity.stdout.strip()}")
+    
+    geometry = execute_in_vm(
+        "/usr/bin/xdotool",
+        "getdisplaygeometry",
+        gui=True
+    )
+    
+    if geometry.returncode != 0 or not geometry.stdout.strip():
+        raise RuntimeError(
+            f"GUI access check failed: {geometry.stderr}"
         )
         
-        print(f"Remote GUI resolution: {resolution}")
-        
+    print(f"Remote GUI resolution: {geometry.stdout.strip()}")
+    
+    # todo: Execute our existing CUA evaluation harness.
+    
     
     return 0
 
