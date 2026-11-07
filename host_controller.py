@@ -125,7 +125,7 @@ def main():
         
     print(f"Remote GUI resolution: {geometry.stdout.strip()}")
     
-    # todo: Execute our existing CUA evaluation harness.
+    # Execute our existing CUA evaluation harness.
     print("\nStarting remote CUA experiment...\n")
     experiment = execute_in_vm(
         "/usr/bin/python3",
