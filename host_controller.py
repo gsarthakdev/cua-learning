@@ -54,7 +54,7 @@ def execute_in_vm(*command, gui=False, timeout=30):
         ],
         capture_output=True,
         text=True,
-        timeout=timeout
+        timeout=timeout,
     )
     
 
@@ -117,9 +117,21 @@ def main():
     print(f"Remote GUI resolution: {geometry.stdout.strip()}")
     
     # todo: Execute our existing CUA evaluation harness.
+    print("\nStarting remote CUA experiment...\n")
+    experiment = execute_in_vm(
+        "/usr/bin/python3",
+        GUEST_RUNNER,
+        gui=True,
+        timeout=180,
+    )
     
+    print(experiment.stdout)
+    if experiment.stderr:
+        print(f"stderr:\n{experiment.stderr}")
+        
+    print(f"Experiment exit code: {experiment.returncode}")
     
-    return 0
+    return experiment.returncode
 
 
 if __name__ == "__main__":
