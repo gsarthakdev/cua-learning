@@ -1,6 +1,12 @@
-# Computer-Use Evaluation Harness
+# Building Computer-use Agents from Scratch
+
+<a href="https://engineering.sarthak.pro/engineering/computer-use-agents-from-scratch">
+  <img src="assets/banner.jpg" alt="Building computer-use agents from scratch" width="100%">
+</a>
 
 In this repo, I'm documenting going from zero to hero with Computer Use Agents, simulating the role of a Research Engineer / SWE.
+
+> **Read the write-up:** [Building computer-use agents from scratch, inspired by Meta's Muse](https://engineering.sarthak.pro/engineering/computer-use-agents-from-scratch). It's the companion post to this repo and walks through the VM setup, the executor/evaluator split, the injected faults, and moving VM control from the guest to the host. I'm updating it live as I'm engineering this project.
 
 ## Overview
 
