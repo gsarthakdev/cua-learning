@@ -94,8 +94,11 @@ def main():
     
     # Verify which OS the VM is running
     os_name = execute_in_vm("/usr/bin/uname", "-s")
-    print(f"Guest OS: {os_name}")
-
+    if os_name.returncode != 0:
+        raise RuntimeError(f"SSH connectivity check failed: {os_name.stderr}")
+    
+    print(f"Guest OS: {os_name.stdout.strip()}")
+    
     # Identify which use executes guest-agent cmds
     identity = execute_in_vm("/usr/bin/id", "-un")
     if identity.returncode != 0:
