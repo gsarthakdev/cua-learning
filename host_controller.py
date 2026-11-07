@@ -31,6 +31,12 @@ def run_utm(*args):
         timeout=30,
     )
     
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"utmctl {' '.join(args)} failed (exit code {result.returncode}):"
+            f"{result.stderr.strip()}"      
+        )
+    
     return result.stdout.strip()
 
 def execute_in_vm(*command, gui=False, timeout=30):
