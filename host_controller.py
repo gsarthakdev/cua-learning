@@ -185,9 +185,9 @@ def main():
     if experiment.stderr:
         print(f"stderr:\n{experiment.stderr}")
     
-    # CHECK FOR GUEST TIMEOUT: Linux VM (Guest-side) timeout
-    if experiment.returncode == 124:
-        print("Guest experiement exceeded its 170-second time limit.")
+    # CHECK FOR GUEST TIMEOUT: Linux VM (Guest-side) timeout. 137 addresses SIKKILL exit code. Regular timeout is code 124.
+    if experiment.returncode in (124, 137):
+        print("Guest experiment exceeded its 170-second time limit.")
     
     # Check for potential SSH connection or auth error
     elif experiment.returncode == 255:
