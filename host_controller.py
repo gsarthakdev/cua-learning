@@ -189,9 +189,17 @@ def main():
     if experiment.stderr:
         print(f"stderr:\n{experiment.stderr}")
     
+    """
+    Return codes verified through offical GNU docs:
+    https://www.gnu.org/software/coreutils/manual/html_node/timeout-invocation.html
+    """
+    
     # CHECK FOR GUEST TIMEOUT: Linux VM (Guest-side) timeout. 137 addresses SIGKILL exit code. Regular timeout is code 124.
-    if experiment.returncode in (124, 137):
+    if experiment.returncode == 124:
         print("Guest experiment exceeded its 170-second time limit.")
+    
+    elif experiment.returncode == 137:
+        print("Guest experiment terminated by SIGKILL (possibly timeout escalation).")
     
     # Check for potential SSH connection or auth error
     elif experiment.returncode == 255:
