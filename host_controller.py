@@ -27,14 +27,13 @@ def run_utm(*args):
         [str(UTMCTL), *args],
         capture_output=True,
         text=True,
-        check=True,
+        # check=True, # If this were to be True, an exception with vague message would be raised immediately
         timeout=30,
     )
     
     if result.returncode != 0:
         raise RuntimeError(
-            f"utmctl {' '.join(args)} failed (exit code {result.returncode}):"
-            f"{result.stderr.strip()}"      
+            f"utmctl {' '.join(args)} failed (exit code {result.returncode}): {result.stderr.strip()}" 
         )
     
     return result.stdout.strip()
@@ -127,12 +126,41 @@ def main():
     
     # Execute our existing CUA evaluation harness.
     print("\nStarting remote CUA experiment...\n")
-    experiment = execute_in_vm(
-        "/usr/bin/python3",
-        GUEST_RUNNER,
-        gui=True,
-        timeout=180,
-    )
+    try:
+        experiment = execute_in_vm(
+            "/usr/bin/timeout", # Linux utility that runs a command with a maximum execution time.
+            "--signal=TERM", # Send SIGTERM to request graceful termination when the time limit is reached.
+            "--kill-after=5s", # If the process hasn't terminated after 5 more seconds, send SIGKILL to force termination.
+            "170s",# Maximum time (170 seconds) the guest experiment can run before SIGTERM is sent.
+            "/usr/bin/python3",
+            "-u", # Unbuffered output so experiment logs reach SSH immediately.
+            GUEST_RUNNER,
+            gui=True,
+            timeout=200,
+        )
+        
+    except subprocess.TimeoutExpired as error:
+        print(f"Host-side SSH timeout after {error.timeout}s")
+        
+        # Preserve any stdout captured before the SSH process timed out.
+        # TimeoutExpired output may be bytes, even with text=True.
+        if error.stdout:
+            output = error.stdout
+            if isinstance(output, bytes):
+                output = output.decode("utf-8", errors="replace")
+            print(f"stdout:\n{output}")
+            
+        if error.stderr:
+            output = error.stderr
+            if isinstance(output, bytes):
+                output = output.decode("utf-8", errors="replace")
+            
+            print(f"stderr:\n{output}")
+        
+        print("Remote experiment termination is not confirmed.")
+        # Return exit code 124 because the host-side SSH subprocess exceeded its timeout.
+        return 124
+
     
     print(experiment.stdout)
     if experiment.stderr:
