@@ -89,6 +89,8 @@ def execute_in_vm(*command, gui=False, timeout=30):
 #         *command,
 #     )
 
+def _to_text(output):
+    return output.decode("utf-8", errors="replace") if isinstance(output, bytes) else output
 
 def main():
     # Verify the VM is running
@@ -161,15 +163,17 @@ def main():
         # TimeoutExpired output may be bytes, even with text=True.
         if error.stdout:
             output = error.stdout
-            if isinstance(output, bytes):
-                output = output.decode("utf-8", errors="replace")
+            output = _to_text(output)
+            # if isinstance(output, bytes):
+            #     output = output.decode("utf-8", errors="replace")
             print(f"stdout:\n{output}")
             # todo: in the near future we should be logging this into a log.json file.
             
         if error.stderr:
             output = error.stderr
-            if isinstance(output, bytes):
-                output = output.decode("utf-8", errors="replace")
+            output = _to_text(output)
+            # if isinstance(output, bytes):
+            #     output = output.decode("utf-8", errors="replace")
             
             print(f"stderr:\n{output}")
             # todo: in the near future we should be logging this into a log.json file.
@@ -185,13 +189,13 @@ def main():
     if experiment.stderr:
         print(f"stderr:\n{experiment.stderr}")
     
-    # CHECK FOR GUEST TIMEOUT: Linux VM (Guest-side) timeout. 137 addresses SIKKILL exit code. Regular timeout is code 124.
+    # CHECK FOR GUEST TIMEOUT: Linux VM (Guest-side) timeout. 137 addresses SIGKILL exit code. Regular timeout is code 124.
     if experiment.returncode in (124, 137):
         print("Guest experiment exceeded its 170-second time limit.")
     
     # Check for potential SSH connection or auth error
     elif experiment.returncode == 255:
-        print("Possivle SSH failure. Remote experiment state is unknown.")
+        print("Possible SSH failure. Remote experiment state is unknown.")
 
         
     print(f"Experiment exit code: {experiment.returncode}")
