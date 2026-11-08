@@ -1,3 +1,10 @@
+def run(*args):
+    print(args)
+
+
+run("hello", "this", "is")
+
+"""
 def do():
     try:
         nums = [1,2,3]
@@ -41,3 +48,4 @@ except ExecutorError as error:
     print(type(error).__name__)
     print(str(error))
     print(error.__context__)
+"""
