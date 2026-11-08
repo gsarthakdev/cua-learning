@@ -31,6 +31,7 @@ def run_utm(*args):
         timeout=30,
     )
     
+    # We do this to get a clear error message.
     if result.returncode != 0:
         raise RuntimeError(
             f"utmctl {' '.join(args)} failed (exit code {result.returncode}): {result.stderr.strip()}" 
@@ -127,6 +128,18 @@ def main():
     # Execute our existing CUA evaluation harness.
     print("\nStarting remote CUA experiment...\n")
     try:
+
+        """
+        2 very important key concepts to note here:
+        
+        1. (Guest timeout) Linux VM receives X amount of seconds to perform the task. If not completed within X seconds, task is forcefully terminated.
+        
+        2. (Host timeout) MacOS (Host) is allocated a maximum of X seconds via `timeout=X` param to keep the SSH process open. After that, the local SSH process is terminated.
+        
+        This is to protect both the host and the guest from infinite running.
+        """
+        
+        
         experiment = execute_in_vm(
             "/usr/bin/timeout", # Linux utility that runs a command with a maximum execution time.
             "--signal=TERM", # Send SIGTERM to request graceful termination when the time limit is reached.
@@ -139,6 +152,8 @@ def main():
             timeout=200,
         )
         
+        # If this doesn't return something within 200 seconds (because of `timeout=200`), it throws a subprocess.TimeoutExpired error.
+        
     except subprocess.TimeoutExpired as error:
         print(f"Host-side SSH timeout after {error.timeout}s")
         
@@ -149,6 +164,7 @@ def main():
             if isinstance(output, bytes):
                 output = output.decode("utf-8", errors="replace")
             print(f"stdout:\n{output}")
+            # todo: in the near future we should be logging this into a log.json file.
             
         if error.stderr:
             output = error.stderr
@@ -156,15 +172,27 @@ def main():
                 output = output.decode("utf-8", errors="replace")
             
             print(f"stderr:\n{output}")
+            # todo: in the near future we should be logging this into a log.json file.
         
         print("Remote experiment termination is not confirmed.")
-        # Return exit code 124 because the host-side SSH subprocess exceeded its timeout.
+        # Return exit code 124 because command timed out (the host-side SSH subprocess exceeded its timeout).
         return 124
 
     
+    # SSH returned *something*, print it:
     print(experiment.stdout)
+    
     if experiment.stderr:
         print(f"stderr:\n{experiment.stderr}")
+    
+    # CHECK FOR GUEST TIMEOUT: Linux VM (Guest-side) timeout
+    if experiment.returncode == 124:
+        print("Guest experiement exceeded its 170-second time limit.")
+    
+    # Check for potential SSH connection or auth error
+    elif experiment.returncode == 255:
+        print("Possivle SSH failure. Remote experiment state is unknown.")
+
         
     print(f"Experiment exit code: {experiment.returncode}")
     
