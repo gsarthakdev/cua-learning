@@ -51,6 +51,7 @@ def main():
         )
         RUN_DIR = PROJECT_DIR / "runs" / RUN_ID
         RUN_DIR.mkdir(parents=True, exist_ok=True)
+        print(f"CUA_RUN_ID={RUN_ID}", flush=True)
         DOCUMENT_PATH = RUN_DIR / "document.odt"
         TASK_NAME = "UsingDoc"
 
