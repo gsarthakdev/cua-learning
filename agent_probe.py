@@ -1,5 +1,15 @@
 import json, subprocess, sys
 from pathlib import Path
+from uuid import uuid4
+from host_controller import (
+    VM_ID,
+    SSH_KEY,
+    SSH_TARGET,
+    run_utm,
+    execute_in_vm,
+    wait_for_ssh,
+    wait_for_gui
+)
 
 MODEL = "sonnet"
 
@@ -78,12 +88,81 @@ def observe_with_claude(screenshot_path: Path) -> str:
     # return response
     # return response["result"]
 
+OBSERVATIONS_DIR = Path(__file__).resolve().parent / "observations"
+
+def capture_live_screenshot() -> Path:
+    """Capture the current Ubuntu desktop and copy it to macOS."""
+
+    if run_utm("status", VM_ID) != "started":
+        raise RuntimeError("Linux/Ubuntu VM is not running!")
+    
+    wait_for_ssh()
+    wait_for_gui()
+    
+    OBSERVATIONS_DIR.mkdir(parents=True, exist_ok=True)
+    
+    screenshot_id = uuid4().hex
+    
+    guest_path = f"/tmp/cua-{screenshot_id}.png"
+    host_path = OBSERVATIONS_DIR / f"{screenshot_id}.png"
+    
+    # Capture the screenshot
+    capture = execute_in_vm(
+        "/usr/bin/scrot",
+        guest_path,
+        gui=True,
+        timeout=15,
+    )
+
+    if capture.returncode != 0:
+        raise RuntimeError(f"Screenshot capture failed: {capture.stderr}")
+    
+    # Transfer the screenshot from Guest to Host (macOS)
+    try:
+        transfer = subprocess.run(
+            [
+                "scp",
+                "-i", str(SSH_KEY),
+                "-o", "IdentitiesOnly=yes",
+                "-o", "BatchMode=yes",
+                "-o", "ConnectTimeout=5",
+                f"{SSH_TARGET}:{guest_path}",
+                str(host_path),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        
+        if transfer.returncode != 0:
+            raise RuntimeError(f"Screenshot transfer failed: {transfer.stderr}")
+        
+        if not host_path.is_file() or host_path.stat().st_size == 0:
+            raise RuntimeError("Screenshot missing or empty.")
+        
+    finally:
+        # Remove the temporary screenshot from Ubuntu.
+        cleanup = execute_in_vm(
+            "/usr/bin/rm",
+            "-f",
+            guest_path,
+        )
+        
+        if cleanup.returncode != 0:
+            print("Warning: Could not remove guest screenshot")
+
+    return host_path
+    
 def main():
     if len(sys.argv) != 2:
-        print("Usage: python3 agent_probe.py <screenshot_path>")
+        print("Usage: python3 agent_probe.py <screenshot_path|--live>")
         return 1
     
-    screenshot_path = Path(sys.argv[1])
+    if sys.argv[1] == "--live":
+        screenshot_path = capture_live_screenshot()
+    else:
+        screenshot_path = Path(sys.argv[1])
+
     observation = observe_with_claude(screenshot_path)
     print("\nClaude's observation:")
     print(observation)
