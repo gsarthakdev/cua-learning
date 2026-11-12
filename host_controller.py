@@ -3,6 +3,7 @@ import subprocess
 from pathlib import Path
 import re
 import argparse
+import time
 
 GUEST_RUNS_DIR = "/home/sarthak/cua-learning/runs"
 COLLECTED_RUNS_DIR = Path(__file__).resolve().parent / "collected_runs"
@@ -91,6 +92,84 @@ def execute_in_vm(*command, gui=False, timeout=30):
     )
     
 
+def wait_for_ssh(timeout_seconds=90):
+    """Wait until Ubuntu accepts and executes SSH commands."""
+    
+    deadline = time.monotonic() + timeout_seconds
+    last_error = "No SSH attempts completed"
+    
+    print("Waiting for SSH readiness...")
+    
+    while time.monotonic() < deadline:
+        try:
+            result = execute_in_vm(
+                "/usr/bin/id",
+                "-un",
+                timeout=8
+            )
+            
+            if result.returncode == 0 and result.stdout.strip() == "sarthak":
+                print("SSH ready.")
+                return
+
+            last_error = (
+                f"Exit code: {result.returncode}; "
+                f"stderr: {result.stderr.strip()}"
+            )
+        except subprocess.TimeoutExpired:
+            last_error = "SSH command timed out"
+        
+        time.sleep(2)
+        
+    raise RuntimeError(
+        f"SSH readiness failed after {timeout_seconds}s. "
+        f"Last error: {last_error}"
+    )
+
+def wait_for_gui(timeout_seconds=120):
+    """Wait until the Ubuntu X11 desktop accepts GUI commands."""
+    
+    deadline = time.monotonic() + timeout_seconds
+    last_error = "No GUI attempts completed"
+    
+    print("Waiting for X11 GUI readiness...")
+    
+    while time.monotonic() < deadline:
+        try:
+            result = execute_in_vm(
+                "/usr/bin/xdotool",
+                "getdisplaygeometry",
+                gui=True,
+                timeout=8
+            )
+            
+            resolution = result.stdout.strip()
+            dimensions = resolution.split()
+            
+            if (
+                result.returncode == 0
+                and len(dimensions) == 2
+                and all(value.isdigit() and int(value) > 0 for value in dimensions)
+            ):
+                print(f"GUI ready. Resolution: {resolution}")
+                return resolution
+            
+            last_error = (
+                f"Exit code: {result.returncode}; "
+                f"stderr: {result.stderr.strip()}"
+            )
+
+        except subprocess.TimeoutExpired:
+            last_error = "GUI readiness check timed out."
+        
+        time.sleep(2)
+        
+    raise RuntimeError(
+        f"GUI readiness failed after {timeout_seconds}s. "
+        f"Last error: {last_error}"
+    )
+
+
 def extract_run_id(output: str) -> str:
     """Extract the experiement's unique run ID from stdout."""
     match = re.search(
@@ -176,24 +255,25 @@ def main():
     print(f"Guest OS: {os_name.stdout.strip()}")
     
     # Identify which use executes guest-agent cmds
-    identity = execute_in_vm("/usr/bin/id", "-un")
-    if identity.returncode != 0:
-        raise RuntimeError(f"SSH identity check failed: {identity.stderr}")
+    wait_for_ssh()
+    # identity = execute_in_vm("/usr/bin/id", "-un")
+    # if identity.returncode != 0:
+    #     raise RuntimeError(f"SSH identity check failed: {identity.stderr}")
     
-    print(f"SSH user executing cmds: {identity.stdout.strip()}")
+    # print(f"SSH user executing cmds: {identity.stdout.strip()}")
+    wait_for_gui() 
+    # geometry = execute_in_vm(
+    #     "/usr/bin/xdotool",
+    #     "getdisplaygeometry",
+    #     gui=True
+    # )
     
-    geometry = execute_in_vm(
-        "/usr/bin/xdotool",
-        "getdisplaygeometry",
-        gui=True
-    )
-    
-    if geometry.returncode != 0 or not geometry.stdout.strip():
-        raise RuntimeError(
-            f"GUI access check failed: {geometry.stderr}"
-        )
+    # if geometry.returncode != 0 or not geometry.stdout.strip():
+    #     raise RuntimeError(
+    #         f"GUI access check failed: {geometry.stderr}"
+    #     )
         
-    print(f"Remote GUI resolution: {geometry.stdout.strip()}")
+    # print(f"Remote GUI resolution: {geometry.stdout.strip()}")
     
     # Execute our existing CUA evaluation harness.
     print("\nStarting remote CUA experiment...\n")

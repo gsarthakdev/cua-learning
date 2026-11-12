@@ -49,3 +49,15 @@ except ExecutorError as error:
     print(str(error))
     print(error.__context__)
 """
+import logging
+
+# Configure logging to show INFO and above
+logging.basicConfig(
+    level=logging.INFO,
+    # format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
+logging.debug("This will NOT print")
+logging.info("Program started")
+logging.warning("Low disk space")
+logging.error("Connection failed")
