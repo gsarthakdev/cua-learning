@@ -1,6 +1,10 @@
 import shlex
 import subprocess
 from pathlib import Path
+import re
+
+GUEST_RUNS_DIR = "/home/sarthak/cua-learning/runs"
+COLLECTED_RUNS_DIR = Path(__file__).resolve().parent / "collected_runs"
 
 UTMCTL = Path("/Applications/UTM.app/Contents/MacOS/utmctl")
 
@@ -63,6 +67,47 @@ def execute_in_vm(*command, gui=False, timeout=30):
         timeout=timeout,
     )
     
+
+def extract_run_id(output: str) -> str:
+    """Extract the experiement's unique run ID from stdout."""
+    match = re.search(
+        r"^CUA_RUN_ID=([0-9]{8}-[0-9]{6}-[0-9a-f]{6})$",
+        output,
+        re.MULTILINE
+    )
+    if match is None:
+        raise RuntimeError("Experiment did not report a valid run ID")
+
+    return match.group(1)
+
+def collect_artifacts(run_id: str):
+    """Copy an experiment's artifacts from Ubuntu to macOS (host)."""
+    COLLECTED_RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    
+    remote_path = f"{SSH_TARGET}:{GUEST_RUNS_DIR}/{run_id}"
+    
+    result = subprocess.run(
+        [
+            "scp",
+            "-i", str(SSH_KEY),
+            "-o", "IdentitiesOnly=yes",
+            "-o", "BatchMode=yes",
+            "-o", "ConnectTimeout=5",
+            "-r",
+            remote_path,
+            str(COLLECTED_RUNS_DIR),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=60
+    )
+    
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"Artifact collection failed: {result.stderr}"
+        )
+        
+    return COLLECTED_RUNS_DIR / run_id
 
 # GUEST_USERNAME = "sarthak"
 # def execute_as_user(*command):
@@ -205,7 +250,13 @@ def main():
     elif experiment.returncode == 255:
         print("Possible SSH failure. Remote experiment state is unknown.")
 
-        
+    
+    run_id = extract_run_id(experiment.stdout)
+    print(f"Experiment run ID: {run_id}")
+    
+    artifact_path = collect_artifacts(run_id)
+    print(f"Artifacts collected at: {artifact_path}")
+    
     print(f"Experiment exit code: {experiment.returncode}")
     
     return experiment.returncode
