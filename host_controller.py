@@ -2,6 +2,7 @@ import shlex
 import subprocess
 from pathlib import Path
 import re
+import argparse
 
 GUEST_RUNS_DIR = "/home/sarthak/cua-learning/runs"
 COLLECTED_RUNS_DIR = Path(__file__).resolve().parent / "collected_runs"
@@ -10,6 +11,7 @@ UTMCTL = Path("/Applications/UTM.app/Contents/MacOS/utmctl")
 
 # Got this ID by running `/Applications/UTM.app/Contents/MacOS/utmctl list`
 VM_ID = "DF61C72B-5135-4708-A5C4-C8C512F0B568"
+BASELINE_SNAPSHOT = "cua-gui-ssh-baseline"
 
 SSH_KEY = Path.home() / ".ssh/cua_learning_ed25519"
 SSH_TARGET = "sarthak@192.168.64.4"
@@ -43,6 +45,27 @@ def run_utm(*args):
     
     return result.stdout.strip()
 
+def reset_vm():
+    """Restore the baseline snapshot and start Ubuntu."""
+    status = run_utm("status", VM_ID)
+    if status != "stopped":
+        # todo: after experiment is ran, we should poweroff vm by default. Part of VM experiment lifecycle work.
+        raise RuntimeError(
+            "VM must be stopped before restoring the baseline."
+            f"Current status: {status}"
+        )
+    
+    print(f"Restoring snapshot: {BASELINE_SNAPSHOT}")
+    
+    run_utm(
+        "snapshot", "restore", VM_ID, "--snapshot", BASELINE_SNAPSHOT
+    )
+
+    print("Snapshot restored successfully.")
+    run_utm("start", VM_ID)
+    print("VM start requested.") # need to implement guest readiness checks.
+    
+    
 def execute_in_vm(*command, gui=False, timeout=30):
     """Execute a command in Ubuntu via SSH.
     
@@ -263,4 +286,16 @@ def main():
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--reset-vm",
+        action="store_true",
+        help="Restore the baesline snapshot and start Ubuntu."
+    )
+
+    args = parser.parse_args()
+    
+    if args.reset_vm:
+        reset_vm()
+    else:
+        raise SystemExit(main())
