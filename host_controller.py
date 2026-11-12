@@ -211,6 +211,17 @@ def collect_artifacts(run_id: str):
         
     return COLLECTED_RUNS_DIR / run_id
 
+    
+def run_from_clean():
+    """Restore a clean VM, boot it, and run a CUA experiment."""
+    
+    print("Starting clean-state CUA experiment...")
+    
+    # Restore snapshot and start the VM
+    reset_vm()
+    
+    return main()
+
 # GUEST_USERNAME = "sarthak"
 # def execute_as_user(*command):
 #     """Execute a command in Ubuntu as the unprivileged user."""
@@ -248,11 +259,12 @@ def main():
         raise RuntimeError("Ubuntu VM is not running")
     
     # Verify which OS the VM is running
-    os_name = execute_in_vm("/usr/bin/uname", "-s")
-    if os_name.returncode != 0:
-        raise RuntimeError(f"SSH connectivity check failed: {os_name.stderr}")
+    # Can't run this anymore since VM might not be fully on when we reach this LOC.
+    # os_name = execute_in_vm("/usr/bin/uname", "-s")
+    # if os_name.returncode != 0:
+    #     raise RuntimeError(f"SSH connectivity check failed: {os_name.stderr}")
     
-    print(f"Guest OS: {os_name.stdout.strip()}")
+    # print(f"Guest OS: {os_name.stdout.strip()}")
     
     # Identify which use executes guest-agent cmds
     wait_for_ssh()
@@ -367,15 +379,31 @@ def main():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument(
+
+    actions = parser.add_mutually_exclusive_group()
+
+    actions.add_argument(
         "--reset-vm",
         action="store_true",
-        help="Restore the baesline snapshot and start Ubuntu."
+        help="Restore the baseline snapshot and start Ubuntu.",
+    )
+
+    actions.add_argument(
+        "--run-from-clean",
+        action="store_true",
+        help="Restore the baseline and execute a CUA experiment.",
     )
 
     args = parser.parse_args()
-    
+
     if args.reset_vm:
         reset_vm()
+        exit_code = 0
+
+    elif args.run_from_clean:
+        exit_code = run_from_clean()
+
     else:
-        raise SystemExit(main())
+        exit_code = main()
+
+    raise SystemExit(exit_code)
