@@ -11,7 +11,8 @@ from host_controller import (
     wait_for_gui,
 )
 
-MODEL = "sonnet"
+# MODEL = "sonnet"
+MODEL = "haiku"
 EXPECTED_TEXT = "Hello from my Python computer-use executor!"
 
 
@@ -218,7 +219,9 @@ def choose_action_with_claude(screenshot_path: Path) -> dict:
     
     Do not modify files or execute GUI actions yourself.
     """
+    import time
     
+    start = time.time()
     result = subprocess.run(
         [
             "claude",
@@ -235,6 +238,8 @@ def choose_action_with_claude(screenshot_path: Path) -> dict:
         text=True,
         timeout=120
     )
+    end = time.time()
+    print(f"*****TOTAL LLM TIME: {end-start}")
 
     if result.returncode != 0:
         raise RuntimeError(
@@ -314,27 +319,41 @@ def execute_model_action(action: dict):
     validate_action(action)
     
     # For this first experiment, support only typing.
-    if action["action"] != "type":
-        raise ValueError(f"Action not yet supported: {action['action']}")
+    if action["action"] == "type":
+        # Limit this first test to the expected sentence.
+        if action["text"] != EXPECTED_TEXT:
+            raise ValueError("Unexpected text proposed by LLM.")
+
+        command = [
+            "/usr/bin/xdotool",
+            "type",
+            "--clearmodifiers",
+            "--delay", "40",
+            action["text"],
+        ]
+        
+    elif action["action"] == "keypress":
+        command = [
+            "/usr/bin/xdotool",
+            "key",
+            "--clearmodifiers",
+            action["key"]
+        ]
     
-    # Limit this first test to the expected sentence.
-    if action["text"] != EXPECTED_TEXT:
-        raise ValueError("Unexpected text proposed by LLM.")
+    else:
+        raise ValueError(f"Action not yet supported: {action[action]}")
+    
     
     result = execute_in_vm(
-        "/usr/bin/xdotool",
-        "type",
-        "--clearmodifiers",
-        "--delay", "40",
-        action["text"],
-        gui=True,
-        timeout=30
-    )
+            *command,
+            gui=True,
+            timeout=30
+        )
 
     if result.returncode != 0:
         raise RuntimeError(f"GUI action execution failed {result.stderr}")
     
-    print("Model-selected typing action executed.")
+    print(f"Executed model action: {action["action"]}")
     
 def main():
     if len(sys.argv) != 2:
