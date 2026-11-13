@@ -247,6 +247,7 @@ def choose_action_with_claude(screenshot_path: Path) -> dict:
         )
     
     response = json.loads(result.stdout)
+    json.dump(response, open("response.json", "w"))
 
     # Handle the event-list response format we encountered.
     if isinstance(response, list):
@@ -279,7 +280,7 @@ def choose_action_with_claude(screenshot_path: Path) -> dict:
     return action    
     # return response
 
-def validate_action(action: dict) -> None:
+def validate_action(action: dict, screen_width, screen_height) -> None:
     """Reject unsupported or malformed computer actions."""
 
     if set(action) != {"action", "text", "key", "x", "y"}:
@@ -310,19 +311,20 @@ def validate_action(action: dict) -> None:
             raise ValueError(f"Unsupported keyboard shortcut: {action['key']}")
 
     if action["action"] == "click":
-        if action["x"] < 0 or action["y"] < 0:
-            raise ValueError("Click coordinates cannot be negative")
-
-def execute_model_action(action: dict):
+        x, y = action["x"], action["y"]
+        if not (0 <= x < screen_width): raise ValueError(f"Invalid X coordinate: {x}")
+        if not (0 <= x < screen_height): raise ValueError(f"Invalid Y coordinate: {y}")
+        
+def execute_model_action(action: dict, screen_width, screen_height):
     """Execute one validates model-selected GUI action."""
     
-    validate_action(action)
+    validate_action(action, screen_width, screen_height)
     
     # For this first experiment, support only typing.
     if action["action"] == "type":
         # Limit this first test to the expected sentence.
-        if action["text"] != EXPECTED_TEXT:
-            raise ValueError("Unexpected text proposed by LLM.")
+        # if action["text"] != EXPECTED_TEXT:
+            # raise ValueError("Unexpected text proposed by LLM.")
 
         command = [
             "/usr/bin/xdotool",
@@ -340,6 +342,19 @@ def execute_model_action(action: dict):
             action["key"]
         ]
     
+    elif action["action"] == "click":
+        command = [
+            "/usr/bin/xdotool",
+            "mousemove",
+            "--sync",
+            str(action["x"]),
+            str(action["y"]),
+            "click",
+            "1",
+        ]
+    elif action["action"] == "done":
+        print("Task completed")
+        return
     else:
         raise ValueError(f"Action not yet supported: {action[action]}")
     
@@ -355,7 +370,7 @@ def execute_model_action(action: dict):
     
     print(f"Executed model action: {action["action"]}")
     
-def main():
+def main(): 
     if len(sys.argv) != 2:
         print("Usage: python3 agent_probe.py <screenshot_path|--live>")
         return 1
@@ -365,12 +380,16 @@ def main():
     else:
         screenshot_path = Path(sys.argv[1])
 
+    from PIL import Image
+    with Image.open(screenshot_path) as image:
+        screen_width, screen_height = image.size    
+        
     action = choose_action_with_claude(screenshot_path)
-    validate_action(action)
+    # validate_action(action)
     print("\nClaude' proposed next action:")
     print(json.dumps(action, indent=2))
     print("\nPerforming the action...")
-    execute_model_action(action)
+    execute_model_action(action, screen_width, screen_height)
     
     
     return 0
