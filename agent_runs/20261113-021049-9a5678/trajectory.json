@@ -1,0 +1,80 @@
+{
+  "run_id": "20261113-021049-9a5678",
+  "document_path": "/home/sarthak/cua-learning/runs/20261113-021049-9a5678/document.odt",
+  "status": "agent_declared_done",
+  "error": null,
+  "actions": [
+    {
+      "step": 1,
+      "screenshot": "/Users/sarthak/development/cua-learning/observations/d7cb355af13848098821b803ff1256dd.png",
+      "action": {
+        "action": "click",
+        "text": "",
+        "key": "",
+        "x": 33,
+        "y": 324
+      },
+      "executed": true
+    },
+    {
+      "step": 2,
+      "screenshot": "/Users/sarthak/development/cua-learning/observations/a8982bb2834b4f768a7308841b9a8c02.png",
+      "action": {
+        "action": "type",
+        "text": "Hello from my Python computer-use executor!",
+        "key": "",
+        "x": 0,
+        "y": 0
+      },
+      "executed": true
+    },
+    {
+      "step": 3,
+      "screenshot": "/Users/sarthak/development/cua-learning/observations/0f8b853d23fe45b2addfafa8e6dab4bb.png",
+      "action": {
+        "action": "keypress",
+        "text": "",
+        "key": "ctrl+shift+s",
+        "x": 0,
+        "y": 0
+      },
+      "executed": true
+    },
+    {
+      "step": 4,
+      "screenshot": "/Users/sarthak/development/cua-learning/observations/9bfdb7a5c5a54512a5846efead7fb868.png",
+      "action": {
+        "action": "type",
+        "text": "/home/sarthak/cua-learning/runs/20261113-021049-9a5678/document.odt",
+        "key": "",
+        "x": 0,
+        "y": 0
+      },
+      "executed": true
+    },
+    {
+      "step": 5,
+      "screenshot": "/Users/sarthak/development/cua-learning/observations/6791238f451e4b879e5e3aad5e593c3a.png",
+      "action": {
+        "action": "keypress",
+        "text": "",
+        "key": "Return",
+        "x": 0,
+        "y": 0
+      },
+      "executed": true
+    },
+    {
+      "step": 6,
+      "screenshot": "/Users/sarthak/development/cua-learning/observations/a4a7cbd47e4d47638a8963c14a96d909.png",
+      "action": {
+        "action": "done",
+        "text": "",
+        "key": "",
+        "x": 0,
+        "y": 0
+      },
+      "executed": false
+    }
+  ]
+}

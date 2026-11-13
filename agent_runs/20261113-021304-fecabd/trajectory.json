@@ -1,0 +1,20 @@
+{
+  "run_id": "20261113-021304-fecabd",
+  "document_path": "/home/sarthak/cua-learning/runs/20261113-021304-fecabd/document.odt",
+  "status": "running",
+  "error": null,
+  "actions": [
+    {
+      "step": 1,
+      "screenshot": "/Users/sarthak/development/cua-learning/observations/3463b2eb721c4a27a2f604902896fe00.png",
+      "action": {
+        "action": "keypress",
+        "text": "",
+        "key": "ctrl+shift+s",
+        "x": 0,
+        "y": 0
+      },
+      "executed": true
+    }
+  ]
+}
