@@ -13,6 +13,24 @@ from host_controller import (
 
 MODEL = "sonnet"
 
+
+ACTION_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "action": {
+            "type": "string",
+            "enum": ["type", "keypress", "click", "done"],
+        },
+        "text": {"type": "string"},
+        "key": {"type": "string"},
+        "x": {"type": "integer"},
+        "y": {"type": "integer"},
+    },
+    "required": ["action", "text", "key", "x", "y"],
+    "additionalProperties": False,
+}
+
+
 def observe_with_claude(screenshot_path: Path) -> str:
     """Ask Claude to inspect a screenshot and recommend one GUI action."""
     
@@ -152,7 +170,43 @@ def capture_live_screenshot() -> Path:
             print("Warning: Could not remove guest screenshot")
 
     return host_path
+
+def choose_action_with_claude(screenshot_path: Path) -> dict:
+    """Ask Claude to select one structured GUI action."""
     
+    screenshot_path = screenshot_path.resolve(strict=True)
+    
+    # Doesn't LLM need to know Display Dimensions to give near-accurate coordinates for click?
+    
+    prompt = f"""
+    You are a computer-use agent operating an Ubuntu desktop.
+    
+    Use the Read tool to inspect this screenshot:
+    {screenshot_path}
+    
+    Task:
+    Create a LibreOffice Writer document containing exactly:
+    "Hello from my Python computer-use executor!"
+    
+    Save the document in ODT format.
+    
+    Select the SINGLE next GUI action needed to make progress.
+    
+    Available actions:
+    - type: Type text into the currently focused field.
+    - keypress: Press a keyboard key or shortcut.
+    - click: Click a coordinate on the screen.
+    - done: Indicate that the task appears complete.
+
+    Return one action matching the required JSON schema.
+    
+    For unused string fields, return "".
+    For unused coordinate fields, return 0.
+    
+    Do not modify files or execute GUI actions yourself.
+    """
+    
+
 def main():
     if len(sys.argv) != 2:
         print("Usage: python3 agent_probe.py <screenshot_path|--live>")
