@@ -10,7 +10,9 @@ from host_controller import (
     wait_for_ssh,
     wait_for_gui,
 )
-
+from datetime import datetime
+from PIL import Image
+import time
 # MODEL = "sonnet"
 MODEL = "haiku"
 EXPECTED_TEXT = "Hello from my Python computer-use executor!"
@@ -32,6 +34,121 @@ ACTION_SCHEMA = {
     "additionalProperties": False,
 }
 
+from host_controller import GUEST_RUNS_DIR
+
+MAX_STEPS = 12
+
+AGENT_RUNS_DIR = (
+    Path(__file__).resolve().parent / "agent_runs"
+)
+
+def run_agent():
+    """Run a bounded, model-drive computer-use experiment."""
+    
+    run_id = (
+        datetime.now().strftime("%Y%m%d-%H%M%S")
+        + "-"
+        + uuid4().hex[:6]
+    )
+    
+    guest_run_dir = f"{GUEST_RUNS_DIR}/{run_id}"
+    document_path = f"{guest_run_dir}/document.odt"
+
+    host_run_dir = AGENT_RUNS_DIR / run_id
+    host_run_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Prepare an output directory inside Ubuntu.
+    setup = execute_in_vm(
+        "/usr/bin/mkdir",
+        "-p",
+        guest_run_dir,
+    )
+    if setup.returncode != 0:
+        raise RuntimeError(
+            f"Could not create guest run directory: {setup.stderr}"
+        )    
+    
+    action_history = []
+    status = "running"
+    error_message = None
+    print(f"Agent run ID: {run_id}")
+    print(f"Target document: {document_path}")
+    
+    try:
+        for step in range(1, MAX_STEPS+1):
+            print(f"\n==== Agent step {step}/{MAX_STEPS} ====")
+            
+            # 1. Observe the current Ubuntu desktop.
+            screenshot_path = capture_live_screenshot()
+            with Image.open(screenshot_path) as image:
+                screen_width, screen_height = image.size
+            
+            # 2. Ask Claude for one action.
+            action = choose_action_with_claude(
+                screenshot_path,
+                [entry["action"] for entry in action_history],
+                document_path
+            )
+            
+            print(f"Claude proposed: {json.dumps(action)}")
+            
+            # 3. Validate the action
+            validate_action(
+                action,
+                screen_width,
+                screen_height
+            )
+            entry = {
+                "step": step,
+                "screenshot": str(screenshot_path),
+                "action": action,
+                "executed": False
+            }
+            action_history.append(entry)
+            
+            # 4. A 'done' proposal stops the loop.
+            if action["action"] == "done":
+                status = "agent_declared_done"
+                print("Claude declared the task is complete.")
+                break
+                
+            # 5. Execute the validated action inside Ubuntu
+            execute_model_action(
+                action, screen_width, screen_height, document_path
+            )
+            
+            entry["executed"] = True
+            
+            # Allow LibreOffice to process the action.
+            time.sleep(1)
+        else:
+            status = "max_steps_exceeded"
+        
+    except Exception as error:
+        status = "agent_error"
+        error_message = str(error)
+        raise
+    
+    finally:
+        # Preserve the trajectory even if an action fails.
+        trajectory = {
+            "run_id": run_id,
+            "document_path": document_path,
+            "status": status,
+            "error": error_message,
+            "actions": action_history
+        }
+        trajectory_path = host_run_dir / "trajectory.json"
+        
+        trajectory_path.write_text(
+            json.dumps(trajectory, indent=2)
+        )
+        
+        print(f"Trajectory saved: {trajectory_path}")
+    
+    print(f"Agent status: {status}")
+    
+    return 0 if status == "agent_declared_done" else 1
 
 def observe_with_claude(screenshot_path: Path) -> str:
     """Ask Claude to inspect a screenshot and recommend one GUI action."""
@@ -173,10 +290,12 @@ def capture_live_screenshot() -> Path:
 
     return host_path
 
-def choose_action_with_claude(screenshot_path: Path) -> dict:
+def choose_action_with_claude(
+    screenshot_path: Path,
+    action_history: list[dict],
+    document_path: str,
+) -> dict:
     """Ask Claude to select one structured GUI action."""
-    from PIL import Image
-    
     screenshot_path = screenshot_path.resolve(strict=True)
     
     with Image.open(screenshot_path) as image:
@@ -194,7 +313,11 @@ def choose_action_with_claude(screenshot_path: Path) -> dict:
     Create a LibreOffice Writer document containing exactly:
     "Hello from my Python computer-use executor!"
     
-    Save the document in ODT format.    
+    Save the document in ODT format at:
+    {document_path}
+    
+    Previous actions:
+    {json.dumps(action_history, indent=2)}
     
     SCREEN INFORMATION:
     - Width: {screen_width} pixels
@@ -204,7 +327,7 @@ def choose_action_with_claude(screenshot_path: Path) -> dict:
     - Y increases toward the bottom.
     - All click coordinates MUST refer to the original screenshot dimensions.
     
-    Select the SINGLE next GUI action needed to make progress.
+    Select the SINGLE next GUI action based on the CURRENT screenshot, needed to make progress.
     
     Available actions:
     - type: Type text into the currently focused field.
@@ -218,9 +341,9 @@ def choose_action_with_claude(screenshot_path: Path) -> dict:
     For unused coordinate fields, return 0.
     
     Do not modify files or execute GUI actions yourself.
+    The task is complete only when you believe the document has been saved at the specified path.
     """
-    import time
-    
+
     start = time.time()
     result = subprocess.run(
         [
@@ -315,16 +438,21 @@ def validate_action(action: dict, screen_width, screen_height) -> None:
         if not (0 <= x < screen_width): raise ValueError(f"Invalid X coordinate: {x}")
         if not (0 <= x < screen_height): raise ValueError(f"Invalid Y coordinate: {y}")
         
-def execute_model_action(action: dict, screen_width, screen_height):
-    """Execute one validates model-selected GUI action."""
+def execute_model_action(
+    action: dict, 
+    screen_width, 
+    screen_height,
+    document_path
+):
+    """Execute and validates a model-selected GUI action."""
     
     validate_action(action, screen_width, screen_height)
     
     # For this first experiment, support only typing.
     if action["action"] == "type":
         # Limit this first test to the expected sentence.
-        # if action["text"] != EXPECTED_TEXT:
-            # raise ValueError("Unexpected text proposed by LLM.")
+        if action["text"] not in {EXPECTED_TEXT, document_path}:
+            raise ValueError("Unexpected text proposed by LLM.")
 
         command = [
             "/usr/bin/xdotool",
@@ -374,13 +502,15 @@ def main():
     if len(sys.argv) != 2:
         print("Usage: python3 agent_probe.py <screenshot_path|--live>")
         return 1
-    
+
+    if len(sys.argv) == 2 and sys.argv[1] == "--agent-run":
+        return run_agent()
+        
     if sys.argv[1] == "--live":
         screenshot_path = capture_live_screenshot()
     else:
         screenshot_path = Path(sys.argv[1])
 
-    from PIL import Image
     with Image.open(screenshot_path) as image:
         screen_width, screen_height = image.size    
         
