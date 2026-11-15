@@ -1,0 +1,13 @@
+{
+  "run_id": "20261114-204747-43aac2",
+  "agent_status": "agent_declared_done",
+  "evaluation_success": true,
+  "end_to_end_success": true,
+  "status": "passed",
+  "evaluation": {
+    "task_name": "UsingDoc",
+    "file_exists": true,
+    "content_matches": true,
+    "success": true
+  }
+}

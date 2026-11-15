@@ -44,3 +44,6 @@ if document_path.is_file():
 else:
     print("Evaluation failed: Agent did not save the expected document.")
 
+VM_ID = "DF61C72B-5135-4708-A5C4-C8C512F0B568"
+from host_controller import run_utm
+run_utm("stop", VM_ID, "--request")

@@ -9,6 +9,7 @@ from host_controller import (
     execute_in_vm,
     wait_for_ssh,
     wait_for_gui,
+    reset_vm
 )
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -192,8 +193,9 @@ def run_agent():
     result_path = host_run_dir / "result.json"
     result_path.write_text(json.dumps(result, indent=2))
     print(json.dumps(result, indent=2))
-    
+    run_utm("stop", VM_ID, "--request")
     return 0 if result["end_to_end_success"] else 1
+
     # return 0 if status == "agent_declared_done" else 1
 
 def observe_with_claude(screenshot_path: Path) -> str:
@@ -278,6 +280,8 @@ def capture_live_screenshot() -> Path:
 
     if run_utm("status", VM_ID) != "started":
         raise RuntimeError("Linux/Ubuntu VM is not running!")
+    
+    # I notice that this gets run every agent-turn (every single time screenshot is taken) so we should only execute this once. Though, safety wise its good to have. I should benchmark performance impact of with/without these two lines per-turn.
     
     wait_for_ssh()
     wait_for_gui()
@@ -543,7 +547,15 @@ def execute_model_action(
         raise RuntimeError(f"GUI action execution failed {result.stderr}")
     
     print(f"Executed model action: {action["action"]}")
-    
+
+def run_agent_from_clean_snapshot():
+    """Restore the VM from clean snapshot and execute model-driven CUA experiment."""
+    print("Starting clean-state model-driven experiment...")
+    reset_vm()
+    wait_for_ssh()
+    wait_for_gui()
+    return run_agent()
+
 def main(): 
     if len(sys.argv) != 2:
         print("Usage: python3 agent_probe.py <screenshot_path|--live|--agent-run>")
@@ -551,6 +563,9 @@ def main():
 
     if len(sys.argv) == 2 and sys.argv[1] == "--agent-run":
         return run_agent()
+    
+    if len(sys.argv) == 2 and sys.argv[1] == "--clean-agent-run":
+        return run_agent_from_clean_snapshot()
         
     if sys.argv[1] == "--live":
         screenshot_path = capture_live_screenshot()
