@@ -1,0 +1,92 @@
+{
+  "run_id": "20261113-030101-7234db",
+  "document_path": "/home/sarthak/cua-learning/runs/20261113-030101-7234db/document.odt",
+  "status": "agent_declared_done",
+  "error": null,
+  "actions": [
+    {
+      "step": 1,
+      "screenshot": "/Users/sarthak/development/cua-learning/observations/379055b253014b1881d4cef5fe68821d.png",
+      "action": {
+        "action": "click",
+        "text": "",
+        "key": "",
+        "x": 33,
+        "y": 325
+      },
+      "executed": true
+    },
+    {
+      "step": 2,
+      "screenshot": "/Users/sarthak/development/cua-learning/observations/63abe45c7859473e8f1a673a71319fd2.png",
+      "action": {
+        "action": "click",
+        "text": "",
+        "key": "",
+        "x": 475,
+        "y": 340
+      },
+      "executed": true
+    },
+    {
+      "step": 3,
+      "screenshot": "/Users/sarthak/development/cua-learning/observations/955d638da3aa49b6b27d77a0ecd178f3.png",
+      "action": {
+        "action": "type",
+        "text": "Hello from my Python computer-use executor!",
+        "key": "",
+        "x": 0,
+        "y": 0
+      },
+      "executed": true
+    },
+    {
+      "step": 4,
+      "screenshot": "/Users/sarthak/development/cua-learning/observations/2293e929f4eb4e3d81bcc477363359d4.png",
+      "action": {
+        "action": "keypress",
+        "text": "",
+        "key": "ctrl+shift+s",
+        "x": 0,
+        "y": 0
+      },
+      "executed": true
+    },
+    {
+      "step": 5,
+      "screenshot": "/Users/sarthak/development/cua-learning/observations/a782da246f5e4ee7bb812d35686dd670.png",
+      "action": {
+        "action": "type",
+        "text": "/home/sarthak/cua-learning/runs/20261113-030101-7234db/document.odt",
+        "key": "",
+        "x": 0,
+        "y": 0
+      },
+      "executed": true
+    },
+    {
+      "step": 6,
+      "screenshot": "/Users/sarthak/development/cua-learning/observations/48d4e023bb824a78a7fdefe2140762c5.png",
+      "action": {
+        "action": "keypress",
+        "text": "",
+        "key": "Return",
+        "x": 0,
+        "y": 0
+      },
+      "executed": true
+    },
+    {
+      "step": 7,
+      "screenshot": "/Users/sarthak/development/cua-learning/observations/b319b56bc6dd49198e0e442429453313.png",
+      "action": {
+        "action": "done",
+        "text": "The screenshot shows a LibreOffice Writer window titled \"document.odt \u2014 LibreOffice Writer\" containing exactly \"Hello from my Python computer-use executor!\" (status bar: 6 words, 43 characters, which matches the string). The title bar shows the document has been saved as document.odt, and the save-status indicator does not show unsaved changes. The window title does not show the directory, so the full path /home/sarthak/cua-learning/runs/20261113-030101-7234db/document.odt is not visually confirmed; it relies on the earlier Save As entry.",
+        "key": "",
+        "x": 0,
+        "y": 0
+      },
+      "executed": false
+    }
+  ]
+}
