@@ -1,0 +1,44 @@
+{
+  "run_id": "20261114-171913-3a1fea",
+  "document_path": "/home/sarthak/cua-learning/runs/20261114-171913-3a1fea/document.odt",
+  "status": "agent_error",
+  "error": "Invalid Y coordinate: 419",
+  "actions": [
+    {
+      "step": 1,
+      "screenshot": "/Users/sarthak/development/cua-learning/observations/2305e019dc804d31aa59ed524a91e73d.png",
+      "action": {
+        "action": "click",
+        "text": "",
+        "key": "",
+        "x": 33,
+        "y": 325
+      },
+      "executed": true
+    },
+    {
+      "step": 2,
+      "screenshot": "/Users/sarthak/development/cua-learning/observations/737e4ee73b2c41e395a3017d27417481.png",
+      "action": {
+        "action": "click",
+        "text": "",
+        "key": "",
+        "x": 537,
+        "y": 381
+      },
+      "executed": true
+    },
+    {
+      "step": 3,
+      "screenshot": "/Users/sarthak/development/cua-learning/observations/53aadebeab304036afb2104ea2765285.png",
+      "action": {
+        "action": "click",
+        "text": "",
+        "key": "",
+        "x": 33,
+        "y": 243
+      },
+      "executed": true
+    }
+  ]
+}

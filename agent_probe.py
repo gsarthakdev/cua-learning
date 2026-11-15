@@ -14,6 +14,10 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 from PIL import Image
 import time
+
+from evaluator import evaluate
+from host_controller import collect_artifacts
+
 # MODEL = "sonnet"
 MODEL = "haiku"
 EXPECTED_TEXT = "Hello from my Python computer-use executor!"
@@ -152,7 +156,45 @@ def run_agent():
     
     print(f"Agent status: {status}")
     
-    return 0 if status == "agent_declared_done" else 1
+    result = {
+        "run_id": run_id,
+        "agent_status": status,
+        "evaluation_success": None,
+        "end_to_end_success": False,
+        "status": "not_evaluated",
+    }
+    
+    try:
+        collected_dir_path = collect_artifacts(run_id)
+        
+    except Exception as error:
+        result["status"] = "collection_failed"
+        result["error"] = str(error)
+    
+    else:
+        document_path_on_host = collected_dir_path / "document.odt"
+        try:
+            evaluation = evaluate(
+                "UsingDoc", document_path_on_host, EXPECTED_TEXT
+            )
+            result["evaluation_success"] = evaluation["success"]
+            result["evaluation"] = evaluation
+            result["end_to_end_success"] = (
+                result["evaluation_success"] and status == "agent_declared_done"
+            )
+            result["status"] = (
+                "passed" if result["end_to_end_success"] else "evaluation_failed"
+            )
+        except Exception as error:
+            result["status"] = "evaluation_failed"
+            result["error"] = str(error)
+
+    result_path = host_run_dir / "result.json"
+    result_path.write_text(json.dumps(result, indent=2))
+    print(json.dumps(result, indent=2))
+    
+    return 0 if result["end_to_end_success"] else 1
+    # return 0 if status == "agent_declared_done" else 1
 
 def observe_with_claude(screenshot_path: Path) -> str:
     """Ask Claude to inspect a screenshot and recommend one GUI action."""
