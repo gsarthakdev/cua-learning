@@ -11,6 +11,7 @@ from host_controller import (
     wait_for_gui,
 )
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from PIL import Image
 import time
 # MODEL = "sonnet"
@@ -132,6 +133,9 @@ def run_agent():
     finally:
         # Preserve the trajectory even if an action fails.
         trajectory = {
+            "date": datetime.now(ZoneInfo("America/New_York")).strftime(
+                "%A, %B %d, %Y at %I:%M %p ET"
+            ),
             "run_id": run_id,
             "document_path": document_path,
             "status": status,
@@ -436,7 +440,7 @@ def validate_action(action: dict, screen_width, screen_height) -> None:
     if action["action"] == "click":
         x, y = action["x"], action["y"]
         if not (0 <= x < screen_width): raise ValueError(f"Invalid X coordinate: {x}")
-        if not (0 <= x < screen_height): raise ValueError(f"Invalid Y coordinate: {y}")
+        if not (0 <= y < screen_height): raise ValueError(f"Invalid Y coordinate: {y}")
         
 def execute_model_action(
     action: dict, 
