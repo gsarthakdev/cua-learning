@@ -546,7 +546,7 @@ def execute_model_action(
     
 def main(): 
     if len(sys.argv) != 2:
-        print("Usage: python3 agent_probe.py <screenshot_path|--live>")
+        print("Usage: python3 agent_probe.py <screenshot_path|--live|--agent-run>")
         return 1
 
     if len(sys.argv) == 2 and sys.argv[1] == "--agent-run":
@@ -559,13 +559,20 @@ def main():
 
     with Image.open(screenshot_path) as image:
         screen_width, screen_height = image.size    
-        
-    action = choose_action_with_claude(screenshot_path)
+    
+    run_id = (
+        datetime.now().strftime("%Y%m%d-%H%M%S")
+        + "-"
+        + uuid4().hex[:6]
+    )    
+    guest_run_dir = f"{GUEST_RUNS_DIR}/{run_id}"
+    document_path = f"{guest_run_dir}/document.odt"        
+    action = choose_action_with_claude(screenshot_path, [], document_path)
     # validate_action(action)
     print("\nClaude' proposed next action:")
     print(json.dumps(action, indent=2))
     print("\nPerforming the action...")
-    execute_model_action(action, screen_width, screen_height)
+    execute_model_action(action, screen_width, screen_height, document_path)
     
     
     return 0
