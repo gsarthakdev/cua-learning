@@ -24,6 +24,9 @@ def evaluate(task_name, document_path: Path, expected):
     
     Returns:
         result (dict): Dictionary containing task_name, file_exists, content_matches, and success.
+        
+    Summary:
+        Open up a document and check if it has the expected text.
     """
     
     EXPECTED = expected
